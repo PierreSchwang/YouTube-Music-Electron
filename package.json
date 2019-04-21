@@ -1,0 +1,26 @@
+{
+  "name": "youtube-music",
+  "version": "1.0.0",
+  "description": "Simple YouTube Music electron wrapper with discord rpc integration.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": "https://github.com/PierreSchwang/youtube-music-electron",
+  "keywords": [
+    "Google",
+    "YouTube",
+    "Music",
+    "Youtube-Music"
+  ],
+  "author": "Pierre Maurice Schwang",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^4.1.4"
+  },
+  "dependencies": {
+    "discord-rpc": "^3.0.1",
+    "jquery": "^3.4.0",
+    "moment": "^2.24.0"
+  }
+}
