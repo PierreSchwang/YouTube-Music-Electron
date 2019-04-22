@@ -1,7 +1,10 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, webContents } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path')
 const { Client } = require('discord-rpc');
+
+const Locale = require('./locale');
+
 //const { blockWindowAds } = require('electron-ad-blocker');
 
 const script = require(path.join(__dirname, 'js/youtube'));
@@ -14,7 +17,13 @@ let mainWindow;
 const clientId = "569595161928269844";
 const discord = new Client({ transport: 'ipc' })
 
+// Messaging over ipc
+let thumbBarMesseger;
+
 function createWindow() {
+    // Wait until all locales and translations are loaded and THEN create the browser window.
+    global.Locale = new Locale();
+
     // Create the browser window.
     mainWindow = new BrowserWindow({
         width: 800,
@@ -26,7 +35,34 @@ function createWindow() {
         },
         icon: path.join(__dirname, '../assets/img/icon.png')
     });
+    //mainWindow.setMenu(null);
 
+    mainWindow.setThumbarButtons([
+        {
+            tooltip: 'Zurück',
+            icon: path.join(__dirname, '../assets/img/icons/previous.png'),
+            click: () => {
+                if (!thumbBarMesseger) return;
+                thumbBarMesseger.send("ToolbarClick", "back");
+            }
+        },
+        {
+            tooltip: 'Pausieren',
+            icon: path.join(__dirname, '../assets/img/icons/pause.png'),
+            click: () => {
+                if (!thumbBarMesseger) return;
+                thumbBarMesseger.send("ToolbarClick", "pauseplay");
+            }
+        },
+        {
+            tooltip: 'Nächste',
+            icon: path.join(__dirname, '../assets/img/icons/next.png'),
+            click: () => {
+                if (!thumbBarMesseger) return;
+                thumbBarMesseger.send("ToolbarClick", "next");
+            }
+        }
+    ]);
     //blockWindowAds(mainWindow, {})
 
     // load the youtube music webpage.
@@ -36,6 +72,8 @@ function createWindow() {
     mainWindow.on('closed', function () {
         mainWindow = null;
     });
+
+    mainWindow.webContents.executeJavaScript(`(${script})()`);
 
     // discord login
     discord.login({ clientId }).catch(console.error);
@@ -58,24 +96,11 @@ app.on('activate', function () {
     if (mainWindow === null) createWindow()
 })
 
-// Called when the discord rpc is ready (-> client connected)
-// Then updates the rich presence and schedule the update every 15 seconds.
-// (The documentation says that the limit for updating the Rich Presence is one update every 15 seconds.)
-discord.on('ready', () => {
-    setDiscordActivity();
-    setInterval(setDiscordActivity, 15e3);
-});
+ipcMain.on("YoutubeData", (event, args) => {
+    if (args.state & args.state == "") return;
+    discord.setActivity(args);
+})
 
-// Request site informations & submit RPC update.
-async function setDiscordActivity() {
-    if (!discord || !mainWindow) {
-        return;
-    }
-
-    var rpcData = await mainWindow.webContents.executeJavaScript(`(${script})()`);
-    
-    // Check if state is empty if passed and cancel update. Usally happens while ads are playing
-    if(rpcData.state & rpcData.state == "") return;
-
-    discord.setActivity(rpcData);
-}
+ipcMain.on("Toolbar", (event, args) => {
+    this.thumbBarMesseger = event.sender;
+})
