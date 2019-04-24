@@ -36,15 +36,22 @@ module.exports = function () {
                         details: "Hört Werbung"
                     });
                 } else {
-                    //check if currently paused
-
                     //TODO: Make updates more persistent (no static array index). Thanks Google for the bullshit you are programming.
+                    if (!isPlaying()) {
+                        ipc.send("YoutubeData", {
+                            largeImageKey: "youtube",
+                            largeImageText: "Youtube Music",
+                            details: $(".title.style-scope.ytmusic-player-bar")[0].innerText,
+                            state: "Pausiert"
+                        });
+                        return;
+                    }
                     var slider = $($("ytmusic-player-bar #sliderBar")[2]);
                     ipc.send("YoutubeData", {
                         largeImageKey: "youtube",
                         largeImageText: "Youtube Music",
-                        details: $(".byline.style-scope.ytmusic-player-bar")[0].innerText,
-                        state: $(".title.style-scope.ytmusic-player-bar")[0].innerText,
+                        details: $(".title.style-scope.ytmusic-player-bar")[0].innerText,
+                        state: $(".byline.style-scope.ytmusic-player-bar")[0].innerText,
                         endTimestamp: Math.floor(Date.now() / 1000) + (slider.attr('aria-valuemax') - slider.attr('aria-valuenow'))
                     });
                 }
