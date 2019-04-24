@@ -33,36 +33,12 @@ function createWindow() {
             plugins: true,
             preload: path.join(__dirname, 'js/youtube.js')
         },
-        icon: path.join(__dirname, '../assets/img/icon.png')
+        icon: path.join(__dirname, '../assets/img/icon.png'),
+        title: "Youtube Music"
     });
     //mainWindow.setMenu(null);
+    setThumbar(true);
 
-    mainWindow.setThumbarButtons([
-        {
-            tooltip: 'Zurück',
-            icon: path.join(__dirname, '../assets/img/icons/previous.png'),
-            click: () => {
-                if (!thumbBarMesseger) return;
-                thumbBarMesseger.send("ToolbarClick", "back");
-            }
-        },
-        {
-            tooltip: 'Pausieren',
-            icon: path.join(__dirname, '../assets/img/icons/pause.png'),
-            click: () => {
-                if (!thumbBarMesseger) return;
-                thumbBarMesseger.send("ToolbarClick", "pauseplay");
-            }
-        },
-        {
-            tooltip: 'Nächste',
-            icon: path.join(__dirname, '../assets/img/icons/next.png'),
-            click: () => {
-                if (!thumbBarMesseger) return;
-                thumbBarMesseger.send("ToolbarClick", "next");
-            }
-        }
-    ]);
     //blockWindowAds(mainWindow, {})
 
     // load the youtube music webpage.
@@ -77,6 +53,35 @@ function createWindow() {
 
     // discord login
     discord.login({ clientId }).catch(console.error);
+}
+
+function setThumbar(playing) {
+    mainWindow.setThumbarButtons([
+        {
+            tooltip: 'Zurück',
+            icon: path.join(__dirname, '../assets/img/icons/previous.png'),
+            click: () => {
+                if (!thumbBarMesseger) return;
+                thumbBarMesseger.send("Toolbar", "back");
+            }
+        },
+        {
+            tooltip: playing ? 'Pausieren' : "Abspielen",
+            icon: path.join(__dirname, '../assets/img/icons/', playing ? 'pause.png' : 'play.png'),
+            click: () => {
+                if (!thumbBarMesseger) return;
+                thumbBarMesseger.send("Toolbar", "pauseplay");
+            }
+        },
+        {
+            tooltip: 'Nächste',
+            icon: path.join(__dirname, '../assets/img/icons/next.png'),
+            click: () => {
+                if (!thumbBarMesseger) return;
+                thumbBarMesseger.send("Toolbar", "next");
+            }
+        }
+    ]);
 }
 
 // This method will be called when Electron has finished
@@ -96,11 +101,16 @@ app.on('activate', function () {
     if (mainWindow === null) createWindow()
 })
 
-ipcMain.on("YoutubeData", (event, args) => {
+ipcMain.on("YoutubeData", (_, args) => {
     if (args.state & args.state == "") return;
     discord.setActivity(args);
 })
 
 ipcMain.on("Toolbar", (event, args) => {
-    this.thumbBarMesseger = event.sender;
+    if (args == null) {
+        thumbBarMesseger = event.sender;
+        return;
+    }
+    if (args.type == "refresh")
+        setThumbar(args.playing);
 })

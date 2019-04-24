@@ -12,6 +12,10 @@ module.exports = function () {
         return $("ytmusic-player-bar").height() > 0;
     }
 
+    function isPlaying() {
+        return $("#bezel svg g path").attr("d") == "M8 5v14l11-7z"
+    }
+
     function submitYoutubeInformations() {
         var urlIdentifier = location.pathname.split('/')[1];
         //TODO: Add more routes
@@ -32,6 +36,8 @@ module.exports = function () {
                         details: "Hört Werbung"
                     });
                 } else {
+                    //check if currently paused
+
                     //TODO: Make updates more persistent (no static array index). Thanks Google for the bullshit you are programming.
                     var slider = $($("ytmusic-player-bar #sliderBar")[2]);
                     ipc.send("YoutubeData", {
@@ -53,25 +59,60 @@ module.exports = function () {
         }
     }
 
+    function nextTrack() {
+        if (!isPlayerBarVisible()) return;
+        $(".next-button").click();
+    }
+
+    function previousTrack() {
+        if (!isPlayerBarVisible()) return;
+        $(".previous-button").click();
+    }
+
+    function pausePlayTrack() {
+        if (!isPlayerBarVisible()) return;
+        $(".play-pause-button").click();
+        updateToolbar()
+    }
+
     function startDiscordRpcSchedule() {
         submitYoutubeInformations();
         setInterval(submitYoutubeInformations, 15e3);
     }
 
-    remote.globalShortcut.register("mediaplaypause", () => {
-        if (!isPlayerBarVisible()) return;
-        $(".play-pause-button").click();
-    });
-    remote.globalShortcut.register("medianexttrack", () => {
-        if (!isPlayerBarVisible()) return;
-        $(".next-button").click();
-    });
-    remote.globalShortcut.register("mediaprevioustrack", () => {
-        if (!isPlayerBarVisible()) return;
-        $(".previous-button").click();
-    });
 
+    remote.globalShortcut.register("mediaplaypause", pausePlayTrack);
+    remote.globalShortcut.register("medianexttrack", nextTrack);
+    remote.globalShortcut.register("mediaprevioustrack", previousTrack);
+    $(".play-pause-button").click(updateToolbar);
+    $("#player").click(updateToolbar);
+
+    ipc.on("Toolbar", (event, args) => {
+        switch (args) {
+            case "back":
+                previousTrack()
+                break;
+            case "pauseplay":
+                pausePlayTrack()
+                break;
+            case "next":
+                nextTrack()
+                break;
+        }
+    })
+
+    function injectSettings() {
+        //TODO: create settings icon and inject
+        var html = '';
+        $("ytmusic-nav-bar .right-content").append(html);
+    }
+
+    function updateToolbar() {
+        // A delay of 10 milliseconds because the icon is not updated fast enough.
+        setTimeout(() => ipc.send("Toolbar", { type: "refresh", playing: isPlaying() }), 10)
+    }
 
     startDiscordRpcSchedule();
-
+    injectSettings();
+    ipc.send("Toolbar");
 };
