@@ -16,7 +16,7 @@
   "author": "Pierre Maurice Schwang",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^9.4.0"
+    "electron": "^13.6.6"
   },
   "dependencies": {
     "discord-rpc": "^3.0.1",
